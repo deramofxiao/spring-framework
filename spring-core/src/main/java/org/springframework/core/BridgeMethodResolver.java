@@ -57,7 +57,9 @@ public final class BridgeMethodResolver {
 
 
 	/**
+	 * 获取桥接方法的原始方法
 	 * Find the original method for the supplied {@link Method bridge Method}.
+	 * 在没有桥接方法时调用该接口也是安全的，方法会将原方法直接返回，调用者无需检查是否是桥接方法
 	 * <p>It is safe to call this method passing in a non-bridge {@link Method} instance.
 	 * In such a case, the supplied {@link Method} instance is returned directly to the caller.
 	 * Callers are <strong>not</strong> required to check for bridging before calling this method.
@@ -73,10 +75,13 @@ public final class BridgeMethodResolver {
 		if (bridgedMethod == null) {
 			// Gather all methods with matching name and parameter size.
 			List<Method> candidateMethods = new ArrayList<>();
+			// 快速判断桥接方法的候选方法
 			MethodFilter filter = candidateMethod ->
 					isBridgedCandidateFor(candidateMethod, bridgeMethod);
+			// 快速把符合条件的候选方法放入list
 			ReflectionUtils.doWithMethods(bridgeMethod.getDeclaringClass(), candidateMethods::add, filter);
 			if (!candidateMethods.isEmpty()) {
+				// 如果候选方法只有1个，直接返回，否则需要进一步筛选
 				bridgedMethod = candidateMethods.size() == 1 ?
 						candidateMethods.get(0) :
 						searchCandidates(candidateMethods, bridgeMethod);
@@ -92,6 +97,11 @@ public final class BridgeMethodResolver {
 	}
 
 	/**
+	 * 快速筛选是不是桥接方法的候选
+	 * candidateMethod是桥接方法
+	 * candidateMethod和bridgeMethod不是同一个方法
+	 * 方法名相同
+	 * 两个方法参数数量相同
 	 * Returns {@code true} if the supplied '{@code candidateMethod}' can be
 	 * consider a validate candidate for the {@link Method} that is {@link Method#isBridge() bridged}
 	 * by the supplied {@link Method bridge Method}. This method performs inexpensive
@@ -171,6 +181,7 @@ public final class BridgeMethodResolver {
 	}
 
 	/**
+	 * 搜索删除的签名和桥接方法一致的method
 	 * Searches for the generic {@link Method} declaration whose erased signature
 	 * matches that of the supplied bridge method.
 	 * @throws IllegalStateException if the generic declaration cannot be found
@@ -179,6 +190,7 @@ public final class BridgeMethodResolver {
 	private static Method findGenericDeclaration(Method bridgeMethod) {
 		// Search parent types for method that has same signature as bridge.
 		Class<?> superclass = bridgeMethod.getDeclaringClass().getSuperclass();
+		// 循环在当前类的父类中寻找桥接方法的原方法
 		while (superclass != null && Object.class != superclass) {
 			Method method = searchForMatch(superclass, bridgeMethod);
 			if (method != null && !method.isBridge()) {
@@ -186,7 +198,7 @@ public final class BridgeMethodResolver {
 			}
 			superclass = superclass.getSuperclass();
 		}
-
+		// 如果方法定义在接口中，则在接口中搜索
 		Class<?>[] interfaces = ClassUtils.getAllInterfacesForClass(bridgeMethod.getDeclaringClass());
 		return searchInterfaces(interfaces, bridgeMethod);
 	}
@@ -209,6 +221,7 @@ public final class BridgeMethodResolver {
 	}
 
 	/**
+	 * 直接在当前类获取方法名和方法参数为当前桥接方法的方法
 	 * If the supplied {@link Class} has a declared {@link Method} whose signature matches
 	 * that of the supplied {@link Method}, then this matching {@link Method} is returned,
 	 * otherwise {@code null} is returned.

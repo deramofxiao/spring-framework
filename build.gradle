@@ -9,7 +9,9 @@ plugins {
 	id "com.github.ben-manes.versions" version '0.28.0'
 	id "me.champeau.gradle.jmh" version "0.5.0" apply false
 }
-
+tasks.withType(JavaCompile) {
+	options.encoding = "UTF-8"
+}
 ext {
 	moduleProjects = subprojects.findAll { it.name.startsWith("spring-") }
 	javaProjects = subprojects - project(":framework-bom")
@@ -295,7 +297,7 @@ configure(allprojects) { project ->
 			maven { url 'https://maven.aliyun.com/repository/snapshots'}
 			maven { url 'https://maven.aliyun.com/repository/grails-core'}
 			maven { url 'https://maven.aliyun.com/repository/mapr-public'}
-			maven { url 'http://maven.aliyun.com/nexus/content/groups/public'}
+			maven { url 'https://maven.aliyun.com/nexus/content/groups/public'}
 			maven { url 'https://repo.spring.io/plugins-release' }
 			maven { url "https://repo.spring.io/libs-spring-framework-build" }
 			maven { url "https://repo.spring.io/milestone" } // Reactor

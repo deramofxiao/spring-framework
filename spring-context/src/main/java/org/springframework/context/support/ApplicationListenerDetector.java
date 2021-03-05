@@ -31,6 +31,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.ObjectUtils;
 
 /**
+ * 检测实现了ApplicationListener接口的bean的后置处理器
+ * 这将捕获getBeanNamesForType无法可靠检测到的bean以及仅对顶级bean有效的相关操作
  * {@code BeanPostProcessor} that detects beans which implement the {@code ApplicationListener}
  * interface. This catches beans that can't reliably be detected by {@code getBeanNamesForType}
  * and related operations which only work against top-level beans.
@@ -49,6 +51,7 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 
 	private final transient AbstractApplicationContext applicationContext;
 
+	// key-bean的名称，value-是否是单例
 	private final transient Map<String, Boolean> singletonNames = new ConcurrentHashMap<>(256);
 
 
@@ -59,7 +62,9 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// 判断给定的type是ApplicationListener的子类
 		if (ApplicationListener.class.isAssignableFrom(beanType)) {
+			// 放入map，value表示是否为单例
 			this.singletonNames.put(beanName, beanDefinition.isSingleton());
 		}
 	}
@@ -73,6 +78,7 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
 		if (bean instanceof ApplicationListener) {
 			// potentially not detected as a listener by getBeanNamesForType retrieval
+			//
 			Boolean flag = this.singletonNames.get(beanName);
 			if (Boolean.TRUE.equals(flag)) {
 				// singleton bean (top-level or inner): register on the fly

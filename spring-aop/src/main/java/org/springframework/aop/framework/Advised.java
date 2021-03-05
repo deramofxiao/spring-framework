@@ -38,51 +38,66 @@ import org.springframework.aop.TargetSource;
 public interface Advised extends TargetClassAware {
 
 	/**
+	 * 返回切面是否冻结
 	 * Return whether the Advised configuration is frozen,
+	 * 冻结情况下切面不能更改
 	 * in which case no advice changes can be made.
 	 */
 	boolean isFrozen();
 
 	/**
+	 * 是否代理完整的目标类而不是指定的接口
 	 * Are we proxying the full target class instead of specified interfaces?
 	 */
 	boolean isProxyTargetClass();
 
 	/**
+	 * 返回aop代理代理的接口
 	 * Return the interfaces proxied by the AOP proxy.
+	 * 将不包括目标类，该类也可能被代理
 	 * <p>Will not include the target class, which may also be proxied.
 	 */
 	Class<?>[] getProxiedInterfaces();
 
 	/**
+	 * 检查给定的接口是否被代理
 	 * Determine whether the given interface is proxied.
 	 * @param intf the interface to check
 	 */
 	boolean isInterfaceProxied(Class<?> intf);
 
 	/**
+	 * 改变当前切面使用的TargetSource
 	 * Change the {@code TargetSource} used by this {@code Advised} object.
+	 * 只有isFrozen为false时可用
 	 * <p>Only works if the configuration isn't {@linkplain #isFrozen frozen}.
 	 * @param targetSource new TargetSource to use
 	 */
 	void setTargetSource(TargetSource targetSource);
 
 	/**
+	 * 返回切面使用的TargetSource
 	 * Return the {@code TargetSource} used by this {@code Advised} object.
 	 */
 	TargetSource getTargetSource();
 
 	/**
+	 * 设置这个代理是否作为ThreadLocal 暴露给AopContext用来检索
 	 * Set whether the proxy should be exposed by the AOP framework as a
 	 * {@link ThreadLocal} for retrieval via the {@link AopContext} class.
+	 * 如果切面需要在自己内部用切面调用一个方法，这个代理必须暴露
 	 * <p>It can be necessary to expose the proxy if an advised object needs
-	 * to invoke a method on itself with advice applied. Otherwise, if an
+	 * to invoke a method on itself with advice applied.
+	 * 否则，如果一个对象使用this调用方法，则切面不会起作用
+	 * Otherwise, if an
 	 * advised object invokes a method on {@code this}, no advice will be applied.
+	 * 默认值为false
 	 * <p>Default is {@code false}, for optimal performance.
 	 */
 	void setExposeProxy(boolean exposeProxy);
 
 	/**
+	 * 返回这个代理是否作为ThreadLocal 暴露给AopContext用来检索
 	 * Return whether the factory should expose the proxy as a {@link ThreadLocal}.
 	 * <p>It can be necessary to expose the proxy if an advised object needs
 	 * to invoke a method on itself with advice applied. Otherwise, if an
@@ -93,6 +108,7 @@ public interface Advised extends TargetClassAware {
 	boolean isExposeProxy();
 
 	/**
+	 * 设置这个代理是否预已经先过滤 他只包含可以被应用的切面(匹配被代理的目标类)
 	 * Set whether this proxy configuration is pre-filtered so that it only
 	 * contains applicable advisors (matching this proxy's target class).
 	 * <p>Default is "false". Set this to "true" if the advisors have been
@@ -109,12 +125,14 @@ public interface Advised extends TargetClassAware {
 	boolean isPreFiltered();
 
 	/**
+	 * 返回应用于这个代理的切面
 	 * Return the advisors applying to this proxy.
 	 * @return a list of Advisors applying to this proxy (never {@code null})
 	 */
 	Advisor[] getAdvisors();
 
 	/**
+	 * 在切面链尾部添加切面
 	 * Add an advisor at the end of the advisor chain.
 	 * <p>The Advisor may be an {@link org.springframework.aop.IntroductionAdvisor},
 	 * in which new interfaces will be available when a proxy is next obtained

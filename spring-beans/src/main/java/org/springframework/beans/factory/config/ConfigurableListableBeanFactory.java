@@ -63,6 +63,8 @@ public interface ConfigurableListableBeanFactory
 	void ignoreDependencyInterface(Class<?> ifc);
 
 	/**
+	 * 用相应的autowired值注册一个特殊的依赖类型。
+	 * 这是为工厂/上下文引用设计的，它们应该是可自动装配的，但在工厂中没有定义为bean
 	 * Register a special dependency type with corresponding autowired value.
 	 * <p>This is intended for factory/context references that are supposed
 	 * to be autowirable but are not defined as beans in the factory:

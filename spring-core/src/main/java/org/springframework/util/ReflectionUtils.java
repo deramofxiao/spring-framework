@@ -46,6 +46,7 @@ import org.springframework.lang.Nullable;
 public abstract class ReflectionUtils {
 
 	/**
+	 * 不是桥接方法且不是合成方法
 	 * Pre-built MethodFilter that matches all non-bridge non-synthetic methods
 	 * which are not declared on {@code java.lang.Object}.
 	 * @since 3.0.5
@@ -54,6 +55,7 @@ public abstract class ReflectionUtils {
 			(method -> !method.isBridge() && !method.isSynthetic());
 
 	/**
+	 * 非静态，非final
 	 * Pre-built FieldFilter that matches all non-static, non-final fields.
 	 */
 	public static final FieldFilter COPYABLE_FIELDS =
@@ -344,33 +346,40 @@ public abstract class ReflectionUtils {
 	}
 
 	/**
+	 * 对给定类和父类(接口和父接口)的所有匹配方法执行给定的回调操作
 	 * Perform the given callback operation on all matching methods of the given
 	 * class and superclasses (or given interface and super-interfaces).
+	 * 除非使用特定的MethodFilter,否则在父类和子类中同名的方法会出现两次
 	 * <p>The same named method occurring on subclass and superclass will appear
 	 * twice, unless excluded by the specified {@link MethodFilter}.
-	 * @param clazz the class to introspect
-	 * @param mc the callback to invoke for each method
-	 * @param mf the filter that determines the methods to apply the callback to
+	 * @param clazz the class to introspect 要查找的类
+	 * @param mc the callback to invoke for each method 每个方法的回调
+	 * @param mf the filter that determines the methods to apply the callback to 规定应用回调的过滤器
 	 * @throws IllegalStateException if introspection fails
 	 */
 	public static void doWithMethods(Class<?> clazz, MethodCallback mc, @Nullable MethodFilter mf) {
 		// Keep backing up the inheritance hierarchy.
+		// 获取类中定义的方法和父级接口定义的default方法
 		Method[] methods = getDeclaredMethods(clazz, false);
+		// 遍历这些方法
 		for (Method method : methods) {
+			// 过滤器不为空时，判断是否符合过滤条件
 			if (mf != null && !mf.matches(method)) {
 				continue;
 			}
 			try {
+				// 执行回调
 				mc.doWith(method);
 			}
 			catch (IllegalAccessException ex) {
 				throw new IllegalStateException("Not allowed to access method '" + method.getName() + "': " + ex);
 			}
 		}
+		//(有父类&&(用户定义过滤器<不是桥接方法和合成方法>||父类不是object)) 符合条件就递归
 		if (clazz.getSuperclass() != null && (mf != USER_DECLARED_METHODS || clazz.getSuperclass() != Object.class)) {
 			doWithMethods(clazz.getSuperclass(), mc, mf);
 		}
-		else if (clazz.isInterface()) {
+		else if (clazz.isInterface()) {// 是接口，使用父接口递归调用
 			for (Class<?> superIfc : clazz.getInterfaces()) {
 				doWithMethods(superIfc, mc, mf);
 			}
@@ -440,6 +449,8 @@ public abstract class ReflectionUtils {
 	}
 
 	/**
+	 * {@link Class#getDeclaredMethods（）}的变体，使用本地缓存以避免JVM的SecurityManager检查和新方法实例。
+	 * 此外，它还包括来自本地实现接口的Java8默认方法，因为这些方法可以像声明的方法一样被有效地处理。
 	 * Variant of {@link Class#getDeclaredMethods()} that uses a local cache in
 	 * order to avoid the JVM's SecurityManager check and new Method instances.
 	 * In addition, it also includes Java 8 default methods from locally
@@ -460,9 +471,12 @@ public abstract class ReflectionUtils {
 		Method[] result = declaredMethodsCache.get(clazz);
 		if (result == null) {
 			try {
+				// 获取类中定义的方法
 				Method[] declaredMethods = clazz.getDeclaredMethods();
+				// 获取接口中定义的default方法
 				List<Method> defaultMethods = findConcreteMethodsOnInterfaces(clazz);
 				if (defaultMethods != null) {
+					// 把default方法和定义的方法一起放到result里
 					result = new Method[declaredMethods.length + defaultMethods.size()];
 					System.arraycopy(declaredMethods, 0, result, 0, declaredMethods.length);
 					int index = declaredMethods.length;
@@ -474,6 +488,7 @@ public abstract class ReflectionUtils {
 				else {
 					result = declaredMethods;
 				}
+				// 放进缓存
 				declaredMethodsCache.put(clazz, (result.length == 0 ? EMPTY_METHOD_ARRAY : result));
 			}
 			catch (Throwable ex) {
@@ -484,11 +499,20 @@ public abstract class ReflectionUtils {
 		return (result.length == 0 || !defensive) ? result : result.clone();
 	}
 
+	/**
+	 * 从接口中获取具体(非抽象)的方法
+	 *
+	 * @param clazz
+	 * @return
+	 */
 	@Nullable
 	private static List<Method> findConcreteMethodsOnInterfaces(Class<?> clazz) {
 		List<Method> result = null;
+		// 获取实现的接口
 		for (Class<?> ifc : clazz.getInterfaces()) {
+			// 遍历接口中的方法
 			for (Method ifcMethod : ifc.getMethods()) {
+				// 判断是否abstract
 				if (!Modifier.isAbstract(ifcMethod.getModifiers())) {
 					if (result == null) {
 						result = new ArrayList<>();

@@ -24,20 +24,32 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.lang.Nullable;
 
 /**
+ * 为应用程序提供配置的中央接口
  * Central interface to provide configuration for an application.
+ * 当应用在运行时是只读的，如果实现者支持，也有可能重新加载
  * This is read-only while the application is running, but may be
  * reloaded if the implementation supports this.
  *
+ * ApplicationContext提供：
  * <p>An ApplicationContext provides:
  * <ul>
+ *     访问应用程序组件的bean工厂方法
  * <li>Bean factory methods for accessing application components.
+ * 继承自ListableBeanFactory
  * Inherited from {@link org.springframework.beans.factory.ListableBeanFactory}.
+ * 以通用方式加载文件资源的能力
  * <li>The ability to load file resources in a generic fashion.
+ * 继承自ResourceLoader接口
  * Inherited from the {@link org.springframework.core.io.ResourceLoader} interface.
+ * 向注册的监听着发布事件的能力
  * <li>The ability to publish events to registered listeners.
+ * 继承自ApplicationEventPublisher接口
  * Inherited from the {@link ApplicationEventPublisher} interface.
+ * 能够解析消息，支持国际化
  * <li>The ability to resolve messages, supporting internationalization.
+ * 继承自MessageSource
  * Inherited from the {@link MessageSource} interface.
+ * 从父上下文继承。后代上下文中的定义总是优先考虑的。例如，这意味着单个父上下文可以被整个web应用程序使用，而每个servlet都有自己的子上下文，它独立于任何其他servlet的子上下文。
  * <li>Inheritance from a parent context. Definitions in a descendant context
  * will always take priority. This means, for example, that a single parent
  * context can be used by an entire web application, while each servlet has
